@@ -52,6 +52,8 @@ public class GUI {
 					class MyThread extends Thread {
 						public void run() {
 							try {
+								String path = "/Users/rohan/Desktop/receiverData.txt";
+								r.setPath(path);
 								r.run();
 							} catch (IOException e) {
 								e.printStackTrace();

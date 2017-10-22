@@ -6,10 +6,17 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Calendar;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 public class receiver {
 	public boolean b = true;
+	public String path;
+
+	void setPath(String p) {
+		path = p;
+		System.out.println("You are logging to " + path);
+	}
 
 	int getDate(String str, char f) { // returns ints for each queried time
 										// value
@@ -60,14 +67,18 @@ public class receiver {
 		return str;
 	}
 
-	String log(String str, Calendar cal) throws IOException { // logs ID and its
-															// time to a text
-															// file
+	String log(String str, Calendar cal, String filePath) throws IOException { // logs
+																				// ID
+																				// and
+																				// its
+		// time to a
+		// text
+		// file
 		receiver r = new receiver();
-		String check = r.getLastLine();
+		String check = r.getLastLine(filePath);
 		String output = str + "  |  " + cal.getTime();
 		if (!output.equals(check)) {
-			FileWriter Writer = new FileWriter("/Users/rohan/Desktop/receiverData.txt", true);
+			FileWriter Writer = new FileWriter(filePath, true);
 			BufferedWriter bWriter = new BufferedWriter(Writer);
 			bWriter.write(output + "\n");
 			bWriter.close();
@@ -76,8 +87,9 @@ public class receiver {
 			return ("ID " + str + " already logged");
 	}
 
-	String getLastLine() throws IOException { // prints last line of ID file
-		BufferedReader in = new BufferedReader(new FileReader("/Users/rohan/Desktop/receiverData.txt"));
+	String getLastLine(String filePath) throws IOException { // prints last line
+																// of ID file
+		BufferedReader in = new BufferedReader(new FileReader(filePath));
 		String inputLine = in.readLine();
 		String outLine = "";
 		while ((inputLine) != null) {
@@ -94,57 +106,58 @@ public class receiver {
 	}
 
 	void run() throws IOException, InterruptedException {
-		BufferedReader in;
+		BufferedReader in = null;
 		URL dweetSource = new URL("https://dweet.io/get/latest/dweet/for/schoolscan");
 		Calendar c = Calendar.getInstance();
 		receiver r = new receiver();
 
 		while (b) {
-			in = new BufferedReader(new InputStreamReader(dweetSource.openStream()));
-			String inputLine = in.readLine(); // reads data from dweet
-
-			// gets time
-			String div1 = ":\"201";
-			String div2 = ",\"content";
-			int index1 = inputLine.indexOf(div1);
-			int index2 = inputLine.indexOf(div2);
-			String timeLine = "";
 			try {
+				in = new BufferedReader(new InputStreamReader(dweetSource.openStream()));
+				String inputLine = in.readLine(); // reads data from Dweet
+
+				// gets time
+				String div1 = ":\"201";
+				String div2 = ",\"content";
+				int index1 = inputLine.indexOf(div1);
+				int index2 = inputLine.indexOf(div2);
+				String timeLine = "";
+
 				timeLine = inputLine.substring(index1, index2);
+
+				// gets content
+				String div3 = ":{";
+				String div4 = ":\"\"";
+				int index3 = inputLine.indexOf(div3);
+				int index4 = inputLine.indexOf(div4);
+				String line = "";
+				try {
+					line = inputLine.substring(index3, index4);
+				} catch (StringIndexOutOfBoundsException e) {
+					System.out.println("No ID available");
+				}
+
+				in.close();
+
+				String ID = line;
+				ID = r.replace(ID, true);
+				timeLine = r.replace(timeLine, false);
+
+				// gets ints for time values and sets calendar values to them
+				int year = r.getDate(timeLine, 'y');
+				int month = r.getDate(timeLine, 'm') - 1;
+				int date = r.getDate(timeLine, 'd');
+				int hour = r.getDate(timeLine, 'h') - 7;
+				int minute = r.getDate(timeLine, 'i');
+				int second = r.getDate(timeLine, 's');
+				c.set(year, month, date, hour, minute, second);
+
+				System.out.println((r.log(ID, c, path)));
+				TimeUnit.SECONDS.sleep(5); // delays for 5 seconds
 			} catch (Exception e) {
 				System.out.println("Unable to reach URL");
+				TimeUnit.SECONDS.sleep(5); // delays for 5 seconds
 			}
-
-			// gets content
-			String div3 = ":{";
-			String div4 = ":\"\"";
-			int index3 = inputLine.indexOf(div3);
-			int index4 = inputLine.indexOf(div4);
-			String line = "";
-			try {
-				line = inputLine.substring(index3, index4);				
-			}
-			catch (StringIndexOutOfBoundsException e) {
-				System.out.println("No ID available");
-			}
-
-			in.close();
-
-			String ID = line;
-			ID = r.replace(ID, true);
-			timeLine = r.replace(timeLine, false);
-
-			// gets ints for time values and sets calendar values to them
-			int year = r.getDate(timeLine, 'y');
-			int month = r.getDate(timeLine, 'm') - 1;
-			int date = r.getDate(timeLine, 'd');
-			int hour = r.getDate(timeLine, 'h') - 7;
-			int minute = r.getDate(timeLine, 'i');
-			int second = r.getDate(timeLine, 's');
-			c.set(year, month, date, hour, minute, second);
-
-			System.out.println((r.log(ID, c)));
-			TimeUnit.SECONDS.sleep(5); // delays for 5 seconds
 		}
 	}
 }
